@@ -17,7 +17,6 @@ import {
 	Video01Icon,
 	Image02Icon,
 	Search01Icon,
-	SparklesIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Spinner } from "@/components/ui/spinner";
@@ -81,15 +80,14 @@ export function StockView() {
 		const toastId = toast.loading(`Mengunduh ${item.title}...`);
 
 		try {
-			// Download via proxy endpoint to completely bypass browser CORS restrictions
-			const proxyUrl = `/api/stock/proxy?url=${encodeURIComponent(item.downloadUrl)}`;
+			// Direct fetch first (all verified CDNs support CORS), fallback to proxy
 			let response: Response;
 			try {
-				response = await fetch(proxyUrl);
-				if (!response.ok) throw new Error("Proxy error");
-			} catch {
-				// Fallback direct fetch if proxy fails
 				response = await fetch(item.downloadUrl);
+				if (!response.ok) throw new Error(`HTTP ${response.status}`);
+			} catch {
+				const proxyUrl = `/api/stock/proxy?url=${encodeURIComponent(item.downloadUrl)}`;
+				response = await fetch(proxyUrl);
 			}
 
 			if (!response.ok) throw new Error("Gagal mengunduh file media");
@@ -160,169 +158,181 @@ export function StockView() {
 
 	return (
 		<PanelView title="Stock Media">
-			<div className="flex flex-col gap-3.5 p-1 h-full overflow-y-auto">
-				{/* Type Switcher */}
-				<div className="flex rounded-md border p-0.5 bg-muted/40">
-					<button
-						type="button"
-						onClick={() => setMediaType("video")}
-						className={cn(
-							"flex-1 flex items-center justify-center gap-1.5 py-1 text-xs font-medium rounded transition-colors",
-							mediaType === "video"
-								? "bg-background text-foreground shadow-xs font-semibold"
-								: "text-muted-foreground hover:text-foreground",
-						)}
-					>
-						<HugeiconsIcon icon={Video01Icon} className="size-3.5" />
-						Stok Video
-					</button>
-					<button
-						type="button"
-						onClick={() => setMediaType("photo")}
-						className={cn(
-							"flex-1 flex items-center justify-center gap-1.5 py-1 text-xs font-medium rounded transition-colors",
-							mediaType === "photo"
-								? "bg-background text-foreground shadow-xs font-semibold"
-								: "text-muted-foreground hover:text-foreground",
-						)}
-					>
-						<HugeiconsIcon icon={Image02Icon} className="size-3.5" />
-						Stok Foto
-					</button>
-				</div>
-
-				{/* Search Bar */}
-				<form onSubmit={handleSearchSubmit} className="flex gap-1.5">
-					<Input
-						placeholder={`Cari ${mediaType === "video" ? "video" : "foto"} bebas royalti...`}
-						value={searchQuery}
-						onChange={(e) => setSearchQuery(e.target.value)}
-						className="h-8 text-xs flex-1"
-					/>
-					<Button type="submit" size="sm" variant="secondary" className="h-8 px-2.5">
-						<HugeiconsIcon icon={Search01Icon} className="size-3.5" />
-					</Button>
-				</form>
-
-				{/* Category Pills */}
-				<div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto pr-0.5">
-					{CATEGORIES.map((cat) => (
+			<div className="flex flex-col gap-2.5 p-1 h-full min-h-0">
+				{/* Top Controls: Fixed Header */}
+				<div className="flex flex-col gap-2 shrink-0">
+					{/* Type Switcher */}
+					<div className="flex rounded-md border p-0.5 bg-muted/40">
 						<button
-							key={cat.id}
 							type="button"
-							onClick={() => {
-								setActiveCategory(cat.id);
-								setSearchQuery("");
-							}}
+							onClick={() => setMediaType("video")}
 							className={cn(
-								"px-2.5 py-0.5 text-[11px] rounded-full font-medium transition-colors",
-								activeCategory === cat.id && !searchQuery
-									? "bg-primary text-primary-foreground font-semibold"
-									: "bg-muted text-muted-foreground hover:bg-muted/80",
+								"flex-1 flex items-center justify-center gap-1.5 py-1 text-xs font-medium rounded transition-colors cursor-pointer",
+								mediaType === "video"
+									? "bg-background text-foreground shadow-xs font-semibold"
+									: "text-muted-foreground hover:text-foreground",
 							)}
 						>
-							{cat.label}
+							<HugeiconsIcon icon={Video01Icon} className="size-3.5" />
+							Stok Video
 						</button>
-					))}
-				</div>
+						<button
+							type="button"
+							onClick={() => setMediaType("photo")}
+							className={cn(
+								"flex-1 flex items-center justify-center gap-1.5 py-1 text-xs font-medium rounded transition-colors cursor-pointer",
+								mediaType === "photo"
+									? "bg-background text-foreground shadow-xs font-semibold"
+									: "text-muted-foreground hover:text-foreground",
+							)}
+						>
+							<HugeiconsIcon icon={Image02Icon} className="size-3.5" />
+							Stok Foto
+						</button>
+					</div>
 
-				{/* Loading State */}
-				{isLoading ? (
-					<div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
-						<Spinner className="size-5" />
-						<span className="text-xs">Memuat koleksi stok...</span>
-					</div>
-				) : items.length === 0 ? (
-					<div className="text-center py-12 text-xs text-muted-foreground">
-						Tidak ada media ditemukan untuk filter ini.
-					</div>
-				) : (
-					/* Items Grid */
-					<div
-						className="grid gap-2 pb-6"
-						style={{
-							gridTemplateColumns: "repeat(auto-fill, minmax(115px, 1fr))",
-						}}
-					>
-						{items.map((item) => (
-							<div
-								key={item.id}
-								className="group relative flex flex-col rounded-lg border bg-card overflow-hidden hover:border-primary/50 transition-all shadow-xs"
-								onMouseEnter={() => setHoveredId(item.id)}
-								onMouseLeave={() => setHoveredId(null)}
+					{/* Search Bar */}
+					<form onSubmit={handleSearchSubmit} className="flex gap-1.5">
+						<Input
+							placeholder={`Cari ${mediaType === "video" ? "video" : "foto"} bebas royalti...`}
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+							className="h-8 text-xs flex-1"
+						/>
+						<Button type="submit" size="sm" variant="secondary" className="h-8 px-2.5 cursor-pointer">
+							<HugeiconsIcon icon={Search01Icon} className="size-3.5" />
+						</Button>
+					</form>
+
+					{/* Category Pills */}
+					<div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto pr-0.5">
+						{CATEGORIES.map((cat) => (
+							<button
+								key={cat.id}
+								type="button"
+								onClick={() => {
+									setActiveCategory(cat.id);
+									setSearchQuery("");
+								}}
+								className={cn(
+									"px-2 py-0.5 text-[11px] rounded-full font-medium transition-colors cursor-pointer",
+									activeCategory === cat.id && !searchQuery
+										? "bg-primary text-primary-foreground font-semibold"
+										: "bg-muted text-muted-foreground hover:bg-muted/80",
+								)}
 							>
-								{/* Thumbnail & Video Preview */}
-								<div className="relative aspect-video w-full bg-muted overflow-hidden">
-									<img
-										src={item.thumbnail}
-										alt={item.title}
-										className="size-full object-cover group-hover:scale-105 transition-transform duration-300"
-										loading="lazy"
-									/>
-
-									{/* Video hover preview */}
-									{item.type === "video" &&
-										hoveredId === item.id &&
-										item.previewUrl && (
-											<video
-												src={item.previewUrl}
-												autoPlay
-												muted
-												loop
-												playsInline
-												className="absolute inset-0 size-full object-cover z-10"
-											/>
-										)}
-
-									{/* Quality & Duration Badges */}
-									<div className="absolute top-1 left-1 flex items-center gap-1 z-20">
-										<span className="px-1 py-0.2 rounded bg-black/70 text-[8px] text-white/90 font-semibold tracking-wider uppercase">
-											{item.width >= 3840 ? "4K" : "HD"}
-										</span>
-									</div>
-
-									{item.type === "video" && (
-										<span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/75 text-[9px] text-white font-mono font-medium z-20">
-											{Math.round(item.duration)}s
-										</span>
-									)}
-
-									{/* Overlay Add Button */}
-									<div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
-										<Button
-											size="sm"
-											className="h-7 px-2 text-xs gap-1 shadow-md cursor-pointer"
-											disabled={addingId === item.id}
-											onClick={() => handleAddToTimeline(item)}
-										>
-											{addingId === item.id ? (
-												<Spinner className="size-3.5" />
-											) : (
-												<>
-													<HugeiconsIcon
-														icon={PlusSignIcon}
-														className="size-3.5"
-													/>
-													<span>Tambah</span>
-												</>
-											)}
-										</Button>
-									</div>
-								</div>
-
-								{/* Info */}
-								<div className="p-1.5 flex flex-col">
-									<span className="text-[11px] font-semibold truncate" title={item.title}>
-										{item.title}
-									</span>
-									<span className="text-[9px] text-muted-foreground truncate">
-										{item.author}
-									</span>
-								</div>
-							</div>
+								{cat.label}
+							</button>
 						))}
 					</div>
-				)}
+
+					{/* Item count summary */}
+					{!isLoading && items.length > 0 && (
+						<div className="flex items-center justify-between text-[10px] text-muted-foreground px-0.5">
+							<span>{items.length} {mediaType === "video" ? "video" : "foto"} tersedia</span>
+							<span className="font-mono text-[9px] uppercase tracking-wider bg-muted px-1.5 py-0.2 rounded">HD / 4K</span>
+						</div>
+					)}
+				</div>
+
+				{/* Scrollable Items Grid */}
+				<div className="flex-1 min-h-0 overflow-y-auto pr-0.5">
+					{isLoading ? (
+						<div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
+							<Spinner className="size-5" />
+							<span className="text-xs">Memuat koleksi stok...</span>
+						</div>
+					) : items.length === 0 ? (
+						<div className="text-center py-12 text-xs text-muted-foreground">
+							Tidak ada media ditemukan untuk filter ini.
+						</div>
+					) : (
+						<div
+							className="grid gap-2 pb-6"
+							style={{
+								gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))",
+							}}
+						>
+							{items.map((item) => (
+								<div
+									key={item.id}
+									className="group relative flex flex-col rounded-lg border bg-card overflow-hidden hover:border-primary/50 transition-all shadow-xs"
+									onMouseEnter={() => setHoveredId(item.id)}
+									onMouseLeave={() => setHoveredId(null)}
+								>
+									{/* Thumbnail & Video Preview */}
+									<div className="relative aspect-video w-full bg-muted overflow-hidden">
+										<img
+											src={item.thumbnail}
+											alt={item.title}
+											className="size-full object-cover group-hover:scale-105 transition-transform duration-300"
+											loading="lazy"
+										/>
+
+										{/* Video hover preview */}
+										{item.type === "video" &&
+											hoveredId === item.id &&
+											item.previewUrl && (
+												<video
+													src={item.previewUrl}
+													autoPlay
+													muted
+													loop
+													playsInline
+													className="absolute inset-0 size-full object-cover z-10"
+												/>
+											)}
+
+										{/* Quality & Duration Badges */}
+										<div className="absolute top-1 left-1 flex items-center gap-1 z-20">
+											<span className="px-1 py-0.2 rounded bg-black/70 text-[8px] text-white/90 font-semibold tracking-wider uppercase">
+												{item.width >= 3840 ? "4K" : "HD"}
+											</span>
+										</div>
+
+										{item.type === "video" && (
+											<span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/75 text-[9px] text-white font-mono font-medium z-20">
+												{Math.round(item.duration)}s
+											</span>
+										)}
+
+										{/* Overlay Add Button */}
+										<div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
+											<Button
+												size="sm"
+												className="h-7 px-2 text-xs gap-1 shadow-md cursor-pointer"
+												disabled={addingId === item.id}
+												onClick={() => handleAddToTimeline(item)}
+											>
+												{addingId === item.id ? (
+													<Spinner className="size-3.5" />
+												) : (
+													<>
+														<HugeiconsIcon
+															icon={PlusSignIcon}
+															className="size-3.5"
+														/>
+														<span>Tambah</span>
+													</>
+												)}
+											</Button>
+										</div>
+									</div>
+
+									{/* Info */}
+									<div className="p-1.5 flex flex-col">
+										<span className="text-[11px] font-semibold truncate" title={item.title}>
+											{item.title}
+										</span>
+										<span className="text-[9px] text-muted-foreground truncate">
+											{item.author}
+										</span>
+									</div>
+								</div>
+							))}
+						</div>
+					)}
+				</div>
 			</div>
 		</PanelView>
 	);

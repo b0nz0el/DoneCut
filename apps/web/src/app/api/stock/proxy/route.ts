@@ -1,5 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+export async function OPTIONS() {
+	return new NextResponse(null, {
+		status: 204,
+		headers: {
+			"Access-Control-Allow-Origin": "*",
+			"Access-Control-Allow-Methods": "GET, OPTIONS",
+			"Access-Control-Allow-Headers": "*",
+		},
+	});
+}
+
 export async function GET(request: NextRequest) {
 	const searchParams = request.nextUrl.searchParams;
 	const url = searchParams.get("url");
@@ -21,7 +32,7 @@ export async function GET(request: NextRequest) {
 		const response = await fetch(url, {
 			headers: {
 				"User-Agent":
-					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
 				Accept: "*/*",
 			},
 		});
@@ -33,8 +44,20 @@ export async function GET(request: NextRequest) {
 			);
 		}
 
-		const contentType =
+		let contentType =
 			response.headers.get("content-type") || "application/octet-stream";
+
+		const pathname = targetUrl.pathname.toLowerCase();
+		if (pathname.endsWith(".mp4")) {
+			contentType = "video/mp4";
+		} else if (pathname.endsWith(".webm")) {
+			contentType = "video/webm";
+		} else if (pathname.endsWith(".jpg") || pathname.endsWith(".jpeg")) {
+			contentType = "image/jpeg";
+		} else if (pathname.endsWith(".png")) {
+			contentType = "image/png";
+		}
+
 		const blob = await response.arrayBuffer();
 
 		return new NextResponse(blob, {
