@@ -53,7 +53,7 @@ export function loadImageSource({
 			const scaledHeight = Math.round(naturalHeight * scale);
 
 			const offscreen = new OffscreenCanvas(scaledWidth, scaledHeight);
-			const ctx = offscreen.getContext("2d");
+			const ctx = offscreen.getContext("2d", { willReadFrequently: true });
 
 			if (ctx) {
 				ctx.drawImage(image, 0, 0, scaledWidth, scaledHeight);

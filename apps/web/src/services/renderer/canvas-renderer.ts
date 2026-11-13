@@ -84,7 +84,7 @@ export class CanvasRenderer {
 	}) {
 		await this.render({ node, time });
 
-		const ctx = targetCanvas.getContext("2d");
+		const ctx = targetCanvas.getContext("2d", { willReadFrequently: true });
 		if (!ctx) {
 			throw new Error("Failed to get target canvas context");
 		}

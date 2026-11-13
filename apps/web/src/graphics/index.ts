@@ -122,7 +122,7 @@ export function buildGraphicPreviewUrl({
 	const canvas = document.createElement("canvas");
 	canvas.width = size;
 	canvas.height = size;
-	const ctx = canvas.getContext("2d");
+	const ctx = canvas.getContext("2d", { willReadFrequently: true });
 	if (!ctx) {
 		return buildFallbackPreviewUrl({ name: definition.name, size });
 	}

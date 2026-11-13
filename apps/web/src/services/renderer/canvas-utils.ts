@@ -9,7 +9,7 @@ export function createCanvasSurface({
 	context: OffscreenCanvasRenderingContext2D;
 } {
 	const canvas = new OffscreenCanvas(width, height);
-	const context = canvas.getContext("2d");
+	const context = canvas.getContext("2d", { willReadFrequently: true });
 	if (!context) {
 		throw new Error("Failed to create 2D rendering context");
 	}
