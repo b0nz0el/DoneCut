@@ -10,4 +10,5 @@ docs/
 .moon/cache/
 
 package-lock.json
-
+.wrangler/
+.open-next/
