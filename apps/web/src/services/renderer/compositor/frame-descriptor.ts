@@ -4,6 +4,8 @@ import { incrementCounter } from "@/diagnostics/render-perf";
 import type { AnyBaseNode } from "../nodes/base-node";
 import type { CanvasRenderer } from "../canvas-renderer";
 import { createCanvasSurface } from "../canvas-utils";
+import { gpuRenderer } from "../gpu-renderer";
+import type { EffectPass } from "@/effects/types";
 import { BlurBackgroundNode } from "../nodes/blur-background-node";
 import { ColorNode } from "../nodes/color-node";
 import { EffectLayerNode } from "../nodes/effect-layer-node";
@@ -124,10 +126,15 @@ async function collectNode({
 		if (!node.resolved || node.resolved.passes.length === 0) {
 			return;
 		}
-		items.push({
-			type: "sceneEffect",
-			effectPassGroups: [node.resolved.passes],
-		});
+		const wasmPasses = node.resolved.passes.filter(
+			(p) => p.shader === "gaussian-blur",
+		);
+		if (wasmPasses.length > 0) {
+			items.push({
+				type: "sceneEffect",
+				effectPassGroups: [wasmPasses],
+			});
+		}
 		return;
 	}
 
@@ -239,11 +246,45 @@ async function collectVisualSourceNode({
 			? DEFAULT_GRAPHIC_SOURCE_SIZE
 			: (node.resolved as ResolvedVisualSourceNodeState).sourceHeight;
 
+	// Separate wasm-supported passes (gaussian-blur) and custom canvas effects
+	const effectPasses = node.resolved.effectPasses ?? [];
+	const wasmPassGroups: EffectPass[][] = [];
+	const customPasses: EffectPass[] = [];
+
+	for (const group of effectPasses) {
+		const wasmGroup: EffectPass[] = [];
+		for (const pass of group) {
+			if (pass.shader === "gaussian-blur") {
+				wasmGroup.push(pass);
+			} else {
+				customPasses.push(pass);
+			}
+		}
+		if (wasmGroup.length > 0) {
+			wasmPassGroups.push(wasmGroup);
+		}
+	}
+
+	let effectiveSource = source;
+	if (customPasses.length > 0) {
+		const surface = createCanvasSurface({
+			width: sourceWidth,
+			height: sourceHeight,
+		});
+		surface.context.drawImage(source, 0, 0, sourceWidth, sourceHeight);
+		effectiveSource = gpuRenderer.applyEffect({
+			source: surface.canvas,
+			width: sourceWidth,
+			height: sourceHeight,
+			passes: customPasses,
+		});
+	}
+
 	const textureId = `${path}:source`;
 	textures.set(textureId, {
 		kind: "external",
 		id: textureId,
-		source,
+		source: effectiveSource,
 		width: sourceWidth,
 		height: sourceHeight,
 	});
@@ -268,7 +309,7 @@ async function collectVisualSourceNode({
 		transform,
 		opacity: node.resolved.opacity,
 		blendMode: node.params.blendMode ?? "normal",
-		effectPassGroups: node.resolved.effectPasses,
+		effectPassGroups: wasmPassGroups,
 		mask,
 	});
 	if (strokeLayer) {

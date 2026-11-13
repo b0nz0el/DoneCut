@@ -4,6 +4,7 @@ import {
 	initializeGpu,
 } from "opencut-wasm";
 import type { EffectPass, EffectUniformValue } from "@/effects/types";
+import { applyCanvasEffect } from "@/effects/canvas-effects";
 
 let gpuAvailable = false;
 let initPromise: Promise<void> | null = null;
@@ -39,17 +40,37 @@ export const gpuRenderer = {
 		height: number;
 		passes: EffectPass[];
 	}): OffscreenCanvas {
-		if (passes.length === 0 || !gpuAvailable) {
+		if (passes.length === 0) {
 			return source;
 		}
 
-		return applyEffectPasses({
-			source,
-			width,
-			height,
-			passes: serializeEffectPasses(passes),
-		});
+		let currentCanvas = source;
+
+		for (const pass of passes) {
+			if (pass.shader === "gaussian-blur" && gpuAvailable) {
+				try {
+					currentCanvas = applyEffectPasses({
+						source: currentCanvas,
+						width,
+						height,
+						passes: serializeEffectPasses([pass]),
+					});
+				} catch (e) {
+					console.warn("WASM blur effect pass failed, using source canvas", e);
+				}
+			} else {
+				currentCanvas = applyCanvasEffect({
+					source: currentCanvas,
+					width,
+					height,
+					pass,
+				});
+			}
+		}
+
+		return currentCanvas;
 	},
+
 
 	applyMaskFeather({
 		maskCanvas,

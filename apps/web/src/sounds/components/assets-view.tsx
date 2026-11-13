@@ -35,6 +35,8 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
+import { BeatSyncTab } from "./beat-sync-tab";
+
 export function SoundsView() {
 	return (
 		<div className="flex h-full flex-col">
@@ -43,6 +45,7 @@ export function SoundsView() {
 					<TabsList>
 						<TabsTrigger value="sound-effects">Sound effects</TabsTrigger>
 						<TabsTrigger value="saved">Saved</TabsTrigger>
+						<TabsTrigger value="beat-sync">Beat Sync (AI)</TabsTrigger>
 					</TabsList>
 				</div>
 				<Separator className="my-4" />
@@ -57,6 +60,12 @@ export function SoundsView() {
 					className="mt-0 flex min-h-0 flex-1 flex-col p-5 pt-0"
 				>
 					<SavedSoundsView />
+				</TabsContent>
+				<TabsContent
+					value="beat-sync"
+					className="mt-0 flex min-h-0 flex-1 flex-col p-5 pt-0"
+				>
+					<BeatSyncTab />
 				</TabsContent>
 			</Tabs>
 		</div>
