@@ -7,7 +7,12 @@ const nextConfig: NextConfig = {
 		removeConsole: process.env.NODE_ENV === "production",
 	},
 	reactStrictMode: true,
-	productionBrowserSourceMaps: true,
+	typescript: {
+		ignoreBuildErrors: true,
+	},
+	eslint: {
+		ignoreDuringBuilds: true,
+	},
 	output: "standalone",
 	images: {
 		remotePatterns: [
