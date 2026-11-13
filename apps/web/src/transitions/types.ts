@@ -1,9 +1,19 @@
 export type TransitionMode = "in" | "out" | "both";
 
+export type TransitionCategory =
+	| "Basic"
+	| "Dissolve"
+	| "Fade"
+	| "Motion"
+	| "Zoom"
+	| "Spin"
+	| "Shake"
+	| "Glitch";
+
 export interface TransitionPreset {
 	id: string;
 	name: string;
-	category: "Basic" | "Motion" | "Zoom" | "Fade";
+	category: TransitionCategory;
 	description: string;
 	cssClass: string;
 	apply: ({
